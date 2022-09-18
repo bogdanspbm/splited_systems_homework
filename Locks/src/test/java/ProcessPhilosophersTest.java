@@ -29,6 +29,12 @@ public class ProcessPhilosophersTest {
             var dstPid = msg.destinationPid();
             testSystem.getProcs().get(dstPid - 1).onMessage(pid, msg.content());
             var responses = testSystem.getEnvs().get(dstPid - 1).takeIncomingMessages();
+            if(responses.size() == 0){
+                System.out.println(dstPid);
+                testSystem.getProcs().get(dstPid - 1).onMessage(pid, -1);
+                System.out.println(pid);
+                testSystem.getProcs().get(pid - 1).onMessage(dstPid, -1);
+            }
             assertEquals(1, responses.size());
 
             var resp = responses.get(0);
