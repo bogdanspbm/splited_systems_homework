@@ -113,14 +113,12 @@ public class ProcessLamport implements MutexProcess {
     }
 
     private void sendOk(int target, int time) {
-        //MessageSerializable msg = new MessageSerializable(new ObjIntString(time, "o"));
         int[] msg = {time, 0};
         env.send(target, msg);
     }
 
     private void sendRequest() {
         acceptCounter = 0;
-        // MessageSerializable msg = new MessageSerializable(new ObjIntString(myRequestTime, "r"));
         int[] msg = {myRequestTime, 1};
         for (int i = 1; i <= env.getNumberOfProcesses(); i++) {
             if (i != env.getProcessId()) {

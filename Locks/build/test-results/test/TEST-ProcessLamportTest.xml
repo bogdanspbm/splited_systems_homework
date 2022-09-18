@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="ProcessLamportTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2022-09-18T09:52:44" hostname="DESKTOP-LP6QJMQ" time="137.23">
+<testsuite name="ProcessLamportTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2022-09-18T12:07:06" hostname="DESKTOP-LP6QJMQ" time="139.396">
   <properties/>
-  <testcase name="twoConcurrentLocks()" classname="ProcessLamportTest" time="0.02"/>
-  <testcase name="randomLocksSmallUnlockProbFIFO()" classname="ProcessLamportTest" time="37.938"/>
-  <testcase name="randomLocksSmallUnlockProbFair()" classname="ProcessLamportTest" time="30.64"/>
-  <testcase name="randomLocksSmallUnlockProbRandom()" classname="ProcessLamportTest" time="0.005"/>
-  <testcase name="randomUnlock()" classname="ProcessLamportTest" time="0.071"/>
-  <testcase name="randomLocksFIFO()" classname="ProcessLamportTest" time="37.67"/>
-  <testcase name="randomLocksFair()" classname="ProcessLamportTest" time="30.82"/>
+  <testcase name="twoConcurrentLocks()" classname="ProcessLamportTest" time="0.022"/>
+  <testcase name="randomLocksSmallUnlockProbFIFO()" classname="ProcessLamportTest" time="39.858"/>
+  <testcase name="randomLocksSmallUnlockProbFair()" classname="ProcessLamportTest" time="30.76"/>
+  <testcase name="randomLocksSmallUnlockProbRandom()" classname="ProcessLamportTest" time="0.004"/>
+  <testcase name="randomUnlock()" classname="ProcessLamportTest" time="0.069"/>
+  <testcase name="randomLocksFIFO()" classname="ProcessLamportTest" time="38.258"/>
+  <testcase name="randomLocksFair()" classname="ProcessLamportTest" time="30.356"/>
   <testcase name="firstLock()" classname="ProcessLamportTest" time="0.001"/>
   <testcase name="randomLocksRandom()" classname="ProcessLamportTest" time="0.001"/>
   <testcase name="firstLockUnlockManyTimes()" classname="ProcessLamportTest" time="0.006"/>
   <testcase name="firstLockUnlock()" classname="ProcessLamportTest" time="0.0"/>
-  <testcase name="roundRobinUnlock()" classname="ProcessLamportTest" time="0.055"/>
+  <testcase name="roundRobinUnlock()" classname="ProcessLamportTest" time="0.057"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>
