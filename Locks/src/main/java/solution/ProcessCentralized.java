@@ -9,7 +9,10 @@ import java.util.Queue;
 public class ProcessCentralized implements MutexProcess {
     private final Environment env;
 
-    Queue<Integer> lockQueue = new LinkedList<>();
+    Queue<Integer> okQueue = new LinkedList<>();
+
+    boolean isLocked = false;
+
 
     public ProcessCentralized(Environment env) {
         this.env = env;
@@ -17,81 +20,71 @@ public class ProcessCentralized implements MutexProcess {
 
     @Override
     public void onMessage(int sourcePid, Object message) {
-        MessageSerializable msg = (MessageSerializable) message;
-        String content = (String) msg.content();
 
-        switch (content) {
-            // req
-            case "q": {
-                lockQueue.add(sourcePid);
-                if (sourcePid == lockQueue.peek()) {
-                    sendOkMessage(sourcePid);
-                }
-                break;
-            }
-            // rel
-            case "l": {
-                if (sourcePid == lockQueue.peek()) {
-                    lockQueue.poll();
+        String msg = (String) message;
 
-                    if (!lockQueue.isEmpty()) {
-                        int toID = lockQueue.peek();
-                        sendOkMessage(toID);
-                    }
-                }
-                break;
-            }
-            // ok
+        switch (msg) {
             case "o": {
-                env.lock();
+                lock();
+                break;
+            }
+            case "r": {
+                okQueue.add(sourcePid);
+                sendOk(sourcePid);
+                break;
+            }
+            case "l": {
+                sendRelease();
                 break;
             }
         }
     }
 
-    private void sendOkMessage(int toID) {
-        if (toID != 1) {
-            String body = "o";
-            MessageSerializable ans = new MessageSerializable(body);
-            env.send(toID, ans);
-        } else {
-            env.lock();
+    private void sendOk(int toID) {
+        if (okQueue.size() > 0 && toID == okQueue.peek() && isLocked == false) {
+            isLocked = true;
+            if (toID != 1) {
+                env.send(toID, "o");
+            } else {
+                lock();
+            }
         }
     }
+
+    private void requestOk() {
+        if (env.getProcessId() == 1) {
+            okQueue.add(1);
+            sendOk(1);
+        } else {
+            env.send(1, "r");
+        }
+    }
+
+    private void sendRelease() {
+        if (env.getProcessId() == 1) {
+            isLocked = false;
+            okQueue.poll();
+            if (!okQueue.isEmpty()) {
+                sendOk(okQueue.peek());
+            }
+        } else {
+            env.send(1, "l");
+        }
+    }
+
+    private void lock() {
+        env.lock();
+    }
+
 
     @Override
     public void onLockRequest() {
-        int procID = env.getProcessId();
-        if (procID != 1) {
-            String body = "q";
-            MessageSerializable msg = new MessageSerializable(body);
-            env.send(1, msg);
-        } else {
-            lockQueue.add(1);
-            if (lockQueue.peek() == 1) {
-                env.lock();
-            }
-        }
+        requestOk();
     }
 
     @Override
     public void onUnlockRequest() {
-        int procID = env.getProcessId();
-        if (procID != 1) {
-            String body = "l";
-            MessageSerializable msg = new MessageSerializable(body);
-            env.send(1, msg);
-            env.unlock();
-        } else {
-            lockQueue.poll();
-            env.unlock();
-
-            if (!lockQueue.isEmpty()) {
-                String body = "o";
-                int toID = lockQueue.peek();
-                MessageSerializable ans = new MessageSerializable(body);
-                env.send(toID, ans);
-            }
-        }
+        env.unlock();
+        sendRelease();
     }
 }
