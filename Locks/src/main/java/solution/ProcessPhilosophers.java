@@ -8,27 +8,28 @@ import java.util.List;
 
 public class ProcessPhilosophers implements MutexProcess {
     private final Environment env;
-
-    private List<Obj2IntBool> listBranches = new ArrayList<>();
-    private List<Integer> requestOrder = new ArrayList<>();
-
     boolean isLocked = false;
-    boolean wantToLock = false;
+    boolean wantLock = false;
+
+    private Obj2IntBool[] edges;
+
+    private List<Integer> requestOrder = new ArrayList<>();
 
     public ProcessPhilosophers(Environment env) {
         this.env = env;
-        initBranches();
+        initEdges();
     }
 
     @Override
     public void onMessage(int sourcePid, Object message) {
-
         int msg = (int) message;
 
         switch (msg) {
             case 0: {
-                invertBranch(sourcePid);
-                tryToLock();
+                edges[sourcePid].invert();
+                if (wantLock) {
+                    tryToLock();
+                }
                 break;
             }
             case 1: {
@@ -36,16 +37,6 @@ public class ProcessPhilosophers implements MutexProcess {
                     requestOrder.add(sourcePid);
                 } else {
                     giveBranch(sourcePid);
-                    if (wantToLock) {
-                        requestBranch(sourcePid);
-                    }
-                }
-                break;
-            }
-
-            case -1: {
-                for (Obj2IntBool branch : listBranches) {
-                    System.out.println(branch);
                 }
                 break;
             }
@@ -62,84 +53,87 @@ public class ProcessPhilosophers implements MutexProcess {
     public void onUnlockRequest() {
         env.unlock();
         isLocked = false;
-        invertBranchesAnon();
-        giveBranchesForOrder();
+        invertAllEdgesAnon();
+        giveOrderBranches();
     }
 
     private boolean canLock() {
-        for (Obj2IntBool branch : listBranches) {
-            if ((branch.b == env.getProcessId() && branch.flag == true)) {
+        for (Obj2IntBool branch : edges) {
+            if (branch != null && branch.b == env.getProcessId() && branch.flag == true) {
                 return false;
             }
         }
         return true;
     }
 
-
     private void tryToLock() {
         if (canLock()) {
             isLocked = true;
             env.lock();
-            wantToLock = false;
-        }
-    }
-
-    private void invertBranchesAnon() {
-        for (Obj2IntBool branch : listBranches) {
-            branch.invertAnon();
-        }
-    }
-
-    private void invertBranch(int targetID) {
-        for (Obj2IntBool branch : listBranches) {
-            if (branch.a == targetID) {
-                branch.invert();
-                return;
-            }
+            wantLock = false;
         }
     }
 
     private void requestBranches() {
-        wantToLock = true;
+        wantLock = true;
         // Тут может быть проблема, что запрашиваем мнимую ветвь
-        for (Obj2IntBool branch : listBranches) {
-            if (branch.b == env.getProcessId() && branch.flag) {
+        for (Obj2IntBool branch : edges) {
+            if (branch != null && branch.b == env.getProcessId() && branch.flag) {
                 env.send(branch.a, 1);
             }
         }
     }
 
-    private void requestBranch(int targetID) {
-        env.send(targetID, 1);
+    private void requestBranch(int target) {
+        env.send(target, 1);
     }
 
-    private void giveBranchesForOrder() {
+    private void giveOrderBranches() {
         for (int i : requestOrder) {
             giveBranch(i);
         }
+
+        requestOrder = new ArrayList<>();
     }
 
-    private void giveBranch(int targetID) {
-        for (Obj2IntBool branch : listBranches) {
-            if ((branch.a == targetID && branch.flag == false)) {
-                env.send(targetID, 0);
-                branch.flag = true;
-            } else if ((branch.b == targetID && branch.flag == true)) {
-                env.send(targetID, 0);
-                branch.invert();
+    private void giveBranch(int target) {
+        Obj2IntBool branch = edges[target];
+
+        if (!branch.flag) {
+            env.send(target, 0);
+            edges[target].flag = true;
+            return;
+        }
+
+        if (branch.flag) {
+            env.send(target, 0);
+            edges[target].invert();
+
+            if (wantLock) {
+                requestBranch(target);
             }
         }
     }
 
-    private void initBranches() {
-        requestOrder = new ArrayList<>();
-        listBranches = new ArrayList<>();
 
-        for (int i = 1; i < env.getProcessId(); i++) {
-            listBranches.add(new Obj2IntBool(i, env.getProcessId(), true));
-        }
-        for (int i = env.getProcessId() + 1; i <= env.getNumberOfProcesses(); i++) {
-            listBranches.add(new Obj2IntBool(env.getProcessId(), i, true));
+    private void invertAllEdgesAnon() {
+        for (Obj2IntBool edge : edges) {
+            if (edge != null) {
+                edge.invertAnon();
+            }
         }
     }
+
+    private void initEdges() {
+        edges = new Obj2IntBool[env.getNumberOfProcesses() + 1];
+        edges[env.getProcessId()] = null;
+        for (int i = 1; i <= env.getNumberOfProcesses(); i++) {
+            if (i > env.getProcessId()) {
+                edges[i] = new Obj2IntBool(env.getProcessId(), i, true);
+            } else if (i < env.getProcessId()) {
+                edges[i] = new Obj2IntBool(i, env.getProcessId(), true);
+            }
+        }
+    }
+
 }

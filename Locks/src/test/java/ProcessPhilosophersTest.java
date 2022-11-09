@@ -29,12 +29,6 @@ public class ProcessPhilosophersTest {
             var dstPid = msg.destinationPid();
             testSystem.getProcs().get(dstPid - 1).onMessage(pid, msg.content());
             var responses = testSystem.getEnvs().get(dstPid - 1).takeIncomingMessages();
-            if(responses.size() == 0){
-                System.out.println(dstPid);
-                testSystem.getProcs().get(dstPid - 1).onMessage(pid, -1);
-                System.out.println(pid);
-                testSystem.getProcs().get(pid - 1).onMessage(dstPid, -1);
-            }
             assertEquals(1, responses.size());
 
             var resp = responses.get(0);
@@ -77,7 +71,7 @@ public class ProcessPhilosophersTest {
     @Test
     public void randomUnlock() {
         var random = new Random(System.nanoTime());
-        for (int nProcs = 1; nProcs <= 10; nProcs++) {
+        for (int nProcs = 2; nProcs <= 10; nProcs++) {
             initProcs(nProcs, () -> null);
             for (int i = 0; i < 1000; i++) {
                 var pid = random.nextInt(nProcs) + 1;
