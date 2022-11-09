@@ -9,14 +9,16 @@ import java.util.List;
 public class ProcessRickartAgrawala implements MutexProcess {
     private final Environment env;
 
-    private int lamportTime = 1;
+    private int requestTime = -1;
 
-    private int myRequestTime = -1;
+    private int curTime = 0;
 
-    private int acceptCounter = 0;
+    private int okCounter = 0;
 
-    private List<Obj2Int> otherRequestTimes = new ArrayList<>();
-    private List<Integer> okOrder = new ArrayList<>();
+    private boolean inLock = false;
+
+    private List<Integer> orderOk = new ArrayList<>();
+
 
     public ProcessRickartAgrawala(Environment env) {
         this.env = env;
@@ -24,101 +26,91 @@ public class ProcessRickartAgrawala implements MutexProcess {
 
     @Override
     public void onMessage(int sourcePid, Object message) {
-        lamportTime += 1;
+        try {
+            // Req
+            int[] msg = (int[]) (message);
+            curTime = Math.max(msg[1] + 1, curTime + 1);
 
-        int[] msg = (int[]) message;
-
-        updateLamportTime(msg[0]);
-
-        switch (msg[1]) {
-            case 1: {
-                otherRequestTimes.add(new Obj2Int(sourcePid, msg[0]));
-
-                if (myRequestTime == -1 || myRequestTime < msg[0] || (myRequestTime == msg[0] && env.getProcessId() < sourcePid)) {
-                    sendOk(sourcePid, msg[0]);
-                } else {
-                    okOrder.add(sourcePid);
-                }
-                break;
+            // Если мы не хотим зайти или наше время больше и не в блокировке, отправляем окей
+            if ((msg[0] < requestTime || requestTime == -1 || (msg[0] == requestTime && env.getProcessId() > sourcePid)) && !inLock) {
+                sendOkey(sourcePid);
+            } else if (!orderOk.contains(sourcePid)) {
+                orderOk.add(sourcePid);
             }
 
-            case 0: {
-                acceptCounter += 1;
-                tryToDoLock();
-                break;
+        } catch (Exception e) {
+            // Okey
+            if (requestTime != -1) {
+                //System.out.println("Ok Receive: " + env.getProcessId());
+                okCounter += 1;
+                tryEnterLock();
             }
         }
     }
 
     @Override
     public void onLockRequest() {
-        lamportTime += 1;
-        myRequestTime = lamportTime;
+        if (requestTime == -1) {
+            increaseCurTime();
+            requestTime = curTime;
 
-        sendRequest();
+           // System.out.println("Lock Request: " + env.getProcessId() + " Time: " + curTime);
 
-        tryToDoLock();
+            sendRequest();
+            tryEnterLock();
+        }
     }
 
     @Override
     public void onUnlockRequest() {
-        lamportTime += 1;
+        increaseCurTime();
 
+        // Разблокируем
         env.unlock();
-        sendRelease();
-        myRequestTime = -1;
-    }
+        inLock = false;
+        requestTime = -1;
 
-    private void sendRelease() {
-        for (Integer id : okOrder) {
-            sendOk(id, lamportTime);
+        //System.out.println("Unlock: " + env.getProcessId() + " Order Size: " + orderOk.size());
+
+
+        // Отправляем окей из очереди
+        for (int i : orderOk) {
+            sendOkey(i);
         }
 
-        okOrder = new ArrayList<>();
+        orderOk = new ArrayList<>();
     }
 
-    private void sendOk(int target, int time) {
-        //MessageSerializable msg = new MessageSerializable(new ObjIntString(time, "o"));
-        int[] msg = {time, 0};
-        env.send(target, msg);
+    private void increaseCurTime() {
+        curTime += 1;
     }
-
-    private void updateLamportTime(int msgTime) {
-        lamportTime = Math.max(lamportTime, msgTime + 1);
-    }
-
-
-    private void tryToDoLock() {
-        if (acceptCounter == env.getNumberOfProcesses() - 1) {
-            if (checkIsFirstInOrder()) {
-                env.lock();
-            }
-        }
-    }
-
-    private boolean checkIsFirstInOrder() {
-        for (Obj2Int val : otherRequestTimes) {
-            if (val.b() < myRequestTime) {
-                return false;
-            }
-            if (val.b() == myRequestTime) {
-                if (val.a() < env.getProcessId()) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
 
     private void sendRequest() {
-        acceptCounter = 0;
+        // Обнуляем счетчик океев
+        okCounter = 1;
 
-        int[] msg = {myRequestTime, 1};
+        // Отправляем всем запрос с нашим временем запроса
         for (int i = 1; i <= env.getNumberOfProcesses(); i++) {
             if (i != env.getProcessId()) {
+                increaseCurTime();
+                int[] msg = {requestTime, curTime};
                 env.send(i, msg);
             }
         }
     }
+
+    private void sendOkey(int target) {
+        //System.out.println("Send Ok: " + env.getProcessId());
+        increaseCurTime();
+        env.send(target, curTime);
+    }
+
+    private void tryEnterLock() {
+        if (okCounter == env.getNumberOfProcesses()) {
+            //System.out.println("Lock: " + env.getProcessId());
+            env.lock();
+            inLock = true;
+        }
+    }
+
 }

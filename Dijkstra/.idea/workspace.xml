@@ -32,7 +32,7 @@
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "WebServerToolWindowFactoryState": "false",
-    "last_opened_file_path": "D:/Projects/splited_systems_homework/Dijkstra",
+    "last_opened_file_path": "D:/Projects/system_architecture/Homework/CLI/CLI",
     "nodejs_package_manager_path": "npm"
   }
 }]]></component>
@@ -123,7 +123,8 @@
       <option name="presentableId" value="Default" />
       <updated>1664462119708</updated>
       <workItem from="1664462120911" duration="130000" />
-      <workItem from="1664471863020" duration="2724000" />
+      <workItem from="1664471863020" duration="3368000" />
+      <workItem from="1664797002036" duration="518000" />
     </task>
     <servers />
   </component>
