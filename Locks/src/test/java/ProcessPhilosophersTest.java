@@ -164,7 +164,7 @@ public class ProcessPhilosophersTest {
 
     @SuppressWarnings("SameParameterValue")
     private void testRandomLocks(float lockProb, float unlockProb, Supplier<MessageBus> messageBusBuilder) {
-        for (int nProcs = 1; nProcs <= 100; nProcs++) {
+        for (int nProcs = 2; nProcs <= 100; nProcs++) {
             for (int i = 0; i < 100; i++) {
                 initProcs(nProcs, messageBusBuilder);
                 testSystem.runSimulation(nProcs * 100, lockProb, unlockProb, false);
