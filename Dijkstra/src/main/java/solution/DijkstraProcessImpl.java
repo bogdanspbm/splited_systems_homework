@@ -11,7 +11,7 @@ public class DijkstraProcessImpl implements DijkstraProcess {
     private int msgCounter = 0;
     private int chdCounter = 0;
     private int parentID = -1;
-    private long distToStart = -1;
+    private long distToStart = Long.MAX_VALUE;
     private boolean isRed = false;
     private boolean isRoot = false;
 
@@ -50,7 +50,7 @@ public class DijkstraProcessImpl implements DijkstraProcess {
 
     @Override
     public Long getDistance() {
-        if (this.distToStart == -1) {
+        if (this.distToStart == Long.MAX_VALUE) {
             return null;
         } else {
             return this.distToStart;
@@ -63,12 +63,12 @@ public class DijkstraProcessImpl implements DijkstraProcess {
         this.isRed = true;
         this.isRoot = true;
 
-        for (Map.Entry<Integer, Long> entry : env.getNeighbours().entrySet()) {
-            if (env.getProcessId() == entry.getKey()) {
+        for (Map.Entry<Integer, Long> node : env.getNeighbours().entrySet()) {
+            if (env.getProcessId() == node.getKey()) {
                 continue;
             }
 
-            env.send(entry.getKey(), "" + entry.getValue());
+            env.send(node.getKey(), "" + node.getValue());
             this.msgCounter++;
         }
 
@@ -88,12 +88,12 @@ public class DijkstraProcessImpl implements DijkstraProcess {
         if (this.distToStart > distance) {
             this.distToStart = distance;
 
-            for (Map.Entry<Integer, Long> entry : env.getNeighbours().entrySet()) {
-                if (env.getProcessId() == entry.getKey()) {
+            for (Map.Entry<Integer, Long> node : env.getNeighbours().entrySet()) {
+                if (env.getProcessId() == node.getKey()) {
                     continue;
                 }
 
-                env.send(entry.getKey(), "" + (this.distToStart + entry.getValue()));
+                env.send(node.getKey(), "" + (this.distToStart + node.getValue()));
                 this.msgCounter++;
             }
         }
